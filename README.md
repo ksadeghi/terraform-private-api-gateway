@@ -12,11 +12,36 @@ VPC
 │       └── Security Group (HTTPS/443)
 ├── API Gateway (Private)
 │   ├── REST API
+│   ├── Resource Policy (allows VPC endpoint access)
 │   ├── Resource & Methods
 │   └── Lambda Integration
 └── Lambda Function
     ├── IAM Role
     └── CloudWatch Logs
+```
+
+## Important Note: No Local-Exec Provisioners
+
+This configuration does **not** use `local-exec` provisioners, making it suitable for environments where local command execution is restricted. The API Gateway works with VPC endpoints through resource policies rather than explicit endpoint association.
+
+### How It Works Without Local-Exec
+
+1. **API Gateway Creation**: Creates a private API Gateway without initially specifying VPC endpoint IDs
+2. **VPC Endpoint Creation**: Creates the VPC endpoint for API Gateway service independently  
+3. **Resource Policy Application**: Applies resource policy that allows access from the VPC endpoint
+4. **Access Method**: Clients access the API through the VPC endpoint using the API Gateway's DNS name
+
+The key insight is that the **resource policy** controls access, not the endpoint configuration. As long as the resource policy allows access from your VPC endpoint (using `aws:sourceVpce` condition) or IP ranges (using `aws:sourceIp` condition), the API will be accessible through the VPC endpoint.
+
+### Optional Manual VPC Endpoint Association
+
+If you need to explicitly associate the VPC endpoint with the API Gateway (some environments may require this), you can run the command provided in the Terraform output after deployment:
+
+```bash
+# Get the command from Terraform output
+terraform output vpc_endpoint_association_info
+
+# Run the provided AWS CLI command manually if needed
 ```
 
 ## Features

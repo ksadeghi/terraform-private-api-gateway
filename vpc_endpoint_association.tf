@@ -1,40 +1,21 @@
 
 
-# This file handles the VPC endpoint association with API Gateway
-# to avoid circular dependency issues
+# This file provides additional configuration for VPC endpoint integration
+# without using local-exec provisioners
 
-# Data source to get the API Gateway after it's created
-data "aws_api_gateway_rest_api" "main" {
-  name = var.api_name
-  
-  depends_on = [aws_api_gateway_rest_api.main]
-}
+# Note: The API Gateway will work with the VPC endpoint through the resource policy
+# even without explicitly associating the VPC endpoint ID in the endpoint configuration.
+# The key is having the correct resource policy that allows access from the VPC endpoint.
 
-# Use AWS CLI to associate VPC endpoint with API Gateway
-resource "null_resource" "associate_vpc_endpoint" {
-  count = var.api_policy_type != "ip_only" ? 1 : 0
-  
-  triggers = {
-    api_gateway_id  = aws_api_gateway_rest_api.main.id
+# Output information about VPC endpoint for manual configuration if needed
+output "vpc_endpoint_association_info" {
+  description = "Information for manual VPC endpoint association if needed"
+  value = {
+    message = "API Gateway should work through VPC endpoint via resource policy. If manual association is needed, use AWS CLI or console."
+    api_gateway_id = aws_api_gateway_rest_api.main.id
     vpc_endpoint_id = aws_vpc_endpoint.api_gateway.id
-    policy_type     = var.api_policy_type
+    manual_command = "aws apigateway update-rest-api --rest-api-id ${aws_api_gateway_rest_api.main.id} --patch-ops op=replace,path=/endpointConfiguration/vpcEndpointIds,value='[\"${aws_vpc_endpoint.api_gateway.id}\"]' --region ${var.aws_region}"
   }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Update API Gateway to include VPC endpoint
-      aws apigateway update-rest-api \
-        --rest-api-id ${aws_api_gateway_rest_api.main.id} \
-        --patch-ops op=replace,path=/endpointConfiguration/vpcEndpointIds,value='["${aws_vpc_endpoint.api_gateway.id}"]' \
-        --region ${var.aws_region} || echo "VPC endpoint association may have failed, but continuing..."
-    EOT
-  }
-
-  depends_on = [
-    aws_api_gateway_rest_api.main,
-    aws_vpc_endpoint.api_gateway,
-    aws_api_gateway_deployment.main
-  ]
 }
 
 

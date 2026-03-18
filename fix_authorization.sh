@@ -101,13 +101,13 @@ fi
 
 print_header "Step 4: Applying Terraform Changes"
 print_status "Running terraform plan..."
-terraform plan -var="api_policy_type=$NEW_POLICY"
+terraform plan
 
 echo ""
 read -p "Apply these changes? (yes/no): " apply_confirm
 if [ "$apply_confirm" = "yes" ]; then
     print_status "Applying changes..."
-    terraform apply -var="api_policy_type=$NEW_POLICY" -auto-approve
+    terraform apply -auto-approve
     
     print_header "Step 5: Getting API Information"
     API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "")
