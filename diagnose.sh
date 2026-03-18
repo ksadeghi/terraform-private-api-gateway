@@ -39,7 +39,7 @@ print_header "1. Terraform Configuration Check"
 if [ -f "terraform.tfvars" ]; then
     print_status "terraform.tfvars found"
     echo "Current api_policy_type:"
-    grep "api_policy_type" terraform.tfvars || echo "api_policy_type not set"
+    grep "api_policy_type" terraform.tfvars || echo "api_policy_type not found in terraform.tfvars"
     echo "Current allowed_cidr_blocks:"
     grep -A 5 "allowed_cidr_blocks" terraform.tfvars || echo "Using defaults"
 else
