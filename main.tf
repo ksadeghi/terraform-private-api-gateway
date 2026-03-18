@@ -145,6 +145,7 @@ resource "aws_api_gateway_deployment" "main" {
   depends_on = [
     aws_api_gateway_integration.lambda,
     aws_api_gateway_integration.lambda_root,
+    aws_api_gateway_rest_api_policy.main,  # CRITICAL: Resource policy must exist before deployment for private APIs
   ]
 
   rest_api_id = aws_api_gateway_rest_api.main.id
