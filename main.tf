@@ -89,77 +89,8 @@ resource "aws_api_gateway_rest_api" "main" {
   description = "Private API Gateway for Lambda function"
 
   endpoint_configuration {
-    types            = ["PRIVATE"]
-    vpc_endpoint_ids = [aws_vpc_endpoint.api_gateway.id]
+    types = ["PRIVATE"]
   }
-
-  policy = var.api_policy_type == "vpc_endpoint" ? jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = "*"
-        Action = "execute-api:Invoke"
-        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
-        Condition = {
-          StringEquals = {
-            "aws:sourceVpce" = aws_vpc_endpoint.api_gateway.id
-          }
-        }
-      }
-    ]
-  }) : var.api_policy_type == "combined" ? jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = "*"
-        Action = "execute-api:Invoke"
-        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
-        Condition = {
-          StringEquals = {
-            "aws:sourceVpce" = aws_vpc_endpoint.api_gateway.id
-          }
-        }
-      },
-      {
-        Effect = "Allow"
-        Principal = "*"
-        Action = "execute-api:Invoke"
-        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
-        Condition = {
-          IpAddress = {
-            "aws:sourceIp" = var.allowed_cidr_blocks
-          }
-        }
-      }
-    ]
-  }) : var.api_policy_type == "ip_only" ? jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = "*"
-        Action = "execute-api:Invoke"
-        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
-        Condition = {
-          IpAddress = {
-            "aws:sourceIp" = var.allowed_cidr_blocks
-          }
-        }
-      }
-    ]
-  }) : jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = "*"
-        Action = "execute-api:Invoke"
-        Resource = "*"
-      }
-    ]
-  })
 
   tags = var.tags
 }
@@ -276,7 +207,7 @@ resource "aws_vpc_endpoint" "api_gateway" {
         Action = [
           "execute-api:Invoke"
         ]
-        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
         Condition = {
           IpAddress = {
             "aws:sourceIp" = var.allowed_cidr_blocks
@@ -289,6 +220,84 @@ resource "aws_vpc_endpoint" "api_gateway" {
   tags = merge(var.tags, {
     Name = "${var.api_name}-vpc-endpoint"
   })
+}
+
+# API Gateway Resource Policy (applied after both API Gateway and VPC endpoint exist)
+resource "aws_api_gateway_rest_api_policy" "main" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+
+  policy = var.api_policy_type == "vpc_endpoint" ? jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Condition = {
+          StringEquals = {
+            "aws:sourceVpce" = aws_vpc_endpoint.api_gateway.id
+          }
+        }
+      }
+    ]
+  }) : var.api_policy_type == "combined" ? jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Condition = {
+          StringEquals = {
+            "aws:sourceVpce" = aws_vpc_endpoint.api_gateway.id
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Condition = {
+          IpAddress = {
+            "aws:sourceIp" = var.allowed_cidr_blocks
+          }
+        }
+      }
+    ]
+  }) : var.api_policy_type == "ip_only" ? jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Condition = {
+          IpAddress = {
+            "aws:sourceIp" = var.allowed_cidr_blocks
+          }
+        }
+      }
+    ]
+  }) : jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "execute-api:Invoke"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+      }
+    ]
+  })
+
+  depends_on = [
+    aws_api_gateway_rest_api.main,
+    aws_vpc_endpoint.api_gateway
+  ]
 }
 
 
