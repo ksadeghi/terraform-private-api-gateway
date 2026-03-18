@@ -181,35 +181,54 @@ resource "aws_api_gateway_method" "custom" {
 
 ### Common Issues
 
-1. **API not accessible**
+1. **Authorization Error: "User: anonymous is not authorized to perform: execute-api:Invoke"**
+   - **Root Cause**: API Gateway resource policy using IP-based restrictions doesn't work properly with VPC endpoints
+   - **Solution**: The configuration now uses `aws:sourceVpce` condition instead of `aws:sourceIp`
+   - **Verification**: Ensure you're accessing the API from within the VPC where the endpoint is deployed
+
+2. **API not accessible**
    - Verify you're calling from within the VPC
-   - Check security group rules
-   - Confirm CIDR blocks include your source IP
+   - Check security group rules allow HTTPS (port 443)
+   - Confirm your source IP is within the allowed CIDR blocks
+   - Ensure you're using the correct API Gateway URL format
 
-2. **Lambda function errors**
+3. **Lambda function errors**
    - Check CloudWatch logs: `/aws/lambda/YOUR_FUNCTION_NAME`
-   - Verify IAM permissions
-   - Test function independently
+   - Verify IAM permissions for Lambda execution role
+   - Test function independently using AWS CLI
+   - Check Lambda function timeout and memory settings
 
-3. **VPC endpoint issues**
-   - Ensure subnets are in different AZs
+4. **VPC endpoint issues**
+   - Ensure subnets are in different AZs for high availability
    - Verify route tables have VPC endpoint routes
-   - Check DNS resolution within VPC
+   - Check DNS resolution within VPC (private DNS should be enabled)
+   - Confirm security group allows inbound HTTPS traffic
 
 ### Debugging Commands
 
 ```bash
-# Check API Gateway deployment
+# Check API Gateway deployment and resource policy
 aws apigateway get-rest-api --rest-api-id YOUR_API_ID
+aws apigateway get-resource-policy --rest-api-id YOUR_API_ID
 
 # Test Lambda function directly
 aws lambda invoke --function-name YOUR_FUNCTION_NAME output.json
 
-# Check VPC endpoint status
+# Check VPC endpoint status and policy
 aws ec2 describe-vpc-endpoints --vpc-endpoint-ids YOUR_ENDPOINT_ID
+
+# Verify security group rules for VPC endpoint
+aws ec2 describe-security-groups --group-ids YOUR_SECURITY_GROUP_ID
+
+# Test API connectivity from within VPC
+curl -v -X GET "https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/"
+
+# Check DNS resolution for API Gateway
+nslookup YOUR_API_ID.execute-api.REGION.amazonaws.com
 
 # View CloudWatch logs
 aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/"
+aws logs tail /aws/lambda/YOUR_FUNCTION_NAME --follow
 ```
 
 ## Cost Considerations

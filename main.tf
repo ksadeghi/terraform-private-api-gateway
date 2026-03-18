@@ -102,8 +102,8 @@ resource "aws_api_gateway_rest_api" "main" {
         Action = "execute-api:Invoke"
         Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
         Condition = {
-          IpAddress = {
-            "aws:sourceIp" = var.allowed_cidr_blocks
+          StringEquals = {
+            "aws:sourceVpce" = aws_vpc_endpoint.api_gateway.id
           }
         }
       }
@@ -225,7 +225,12 @@ resource "aws_vpc_endpoint" "api_gateway" {
         Action = [
           "execute-api:Invoke"
         ]
-        Resource = "*"
+        Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"
+        Condition = {
+          IpAddress = {
+            "aws:sourceIp" = var.allowed_cidr_blocks
+          }
+        }
       }
     ]
   })
