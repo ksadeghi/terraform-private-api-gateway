@@ -1,0 +1,42 @@
+
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your actual values
+
+# AWS Configuration
+aws_region = "us-east-1"
+
+# VPC Configuration (REQUIRED - Update with your actual VPC and subnet IDs)
+vpc_id = "vpc-xxxxxxxxx"
+subnet_ids = [
+  "subnet-xxxxxxxxx",  # Private subnet 1
+  "subnet-yyyyyyyyy"   # Private subnet 2
+]
+
+# API Gateway Configuration
+api_name = "my-private-lambda-api"
+stage_name = "prod"
+
+# Lambda Configuration
+lambda_function_name = "my-private-lambda"
+lambda_runtime = "python3.9"
+lambda_timeout = 30
+lambda_memory_size = 128
+
+# Security Configuration
+allowed_cidr_blocks = [
+  "10.0.0.0/8",      # Private network range
+  "172.16.0.0/12",   # Private network range
+  "192.168.0.0/16"   # Private network range
+]
+
+# Logging
+log_retention_days = 14
+
+# Tags
+tags = {
+  Environment = "production"
+  Project     = "private-lambda-api"
+  Owner       = "your-team"
+  ManagedBy   = "terraform"
+}
+
