@@ -67,6 +67,16 @@ variable "log_retention_days" {
   default     = 14
 }
 
+variable "api_policy_type" {
+  description = "Type of API Gateway resource policy to use"
+  type        = string
+  default     = "combined"
+  validation {
+    condition = contains(["vpc_endpoint", "combined", "ip_only", "open"], var.api_policy_type)
+    error_message = "API policy type must be one of: vpc_endpoint, combined, ip_only, open."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

@@ -16,6 +16,14 @@ subnet_ids = [
 api_name = "my-private-lambda-api"
 stage_name = "prod"
 
+# API Gateway Policy Type
+# Options: "vpc_endpoint", "combined", "ip_only", "open"
+# - vpc_endpoint: Uses aws:sourceVpce condition (recommended for VPC endpoints)
+# - combined: Uses both VPC endpoint and IP conditions (most compatible)
+# - ip_only: Uses only IP-based conditions (fallback option)
+# - open: No restrictions (TESTING ONLY - not secure)
+api_policy_type = "combined"
+
 # Lambda Configuration
 lambda_function_name = "my-private-lambda"
 lambda_runtime = "python3.9"
