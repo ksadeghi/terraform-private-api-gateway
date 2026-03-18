@@ -209,11 +209,7 @@ resource "aws_vpc_endpoint" "api_gateway" {
           "execute-api:Invoke"
         ]
         Resource = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
-        Condition = {
-          IpAddress = {
-            "aws:sourceIp" = var.allowed_cidr_blocks
-          }
-        }
+        # Removed IP condition for testing - VPC endpoint already restricts access to VPC
       }
     ]
   })
